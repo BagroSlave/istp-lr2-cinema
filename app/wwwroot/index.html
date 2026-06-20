@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Кінотека — Web API + JavaScript</title>
+    <style>
+        :root { --grad: linear-gradient(135deg, #7c3aed, #db2777); --bg:#0f1020; --card:#1b1c33; --text:#e7e9f5; --muted:#9aa0c0; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; min-height: 100vh; }
+        .wrap { max-width: 1000px; margin: 0 auto; padding: 0 18px 50px; }
+        header.hero { background: var(--grad); padding: 34px 24px; text-align: center; border-radius: 0 0 26px 26px; box-shadow: 0 10px 30px rgba(124,58,237,.35); }
+        header.hero h1 { margin: 0; font-size: 2.3rem; font-weight: 800; }
+        header.hero p { margin: .45rem 0 0; opacity: .92; }
+        header.hero a { color: #fff; }
+        h2 { margin: 30px 0 14px; font-weight: 700; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+        .movie { background: var(--card); border-radius: 16px; padding: 16px; box-shadow: 0 6px 20px rgba(0,0,0,.35); position: relative; transition: .15s; border: 1px solid #2a2c4d; }
+        .movie:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0,0,0,.45); }
+        .movie .poster { height: 150px; border-radius: 12px; background: var(--grad); display: flex; align-items: center; justify-content: center; font-size: 2.4rem; margin-bottom: 12px; overflow: hidden; }
+        .movie .poster img { width: 100%; height: 100%; object-fit: cover; }
+        .movie h3 { margin: 0 0 4px; font-size: 1.05rem; }
+        .movie .meta { color: var(--muted); font-size: .86rem; }
+        .rating { display: inline-block; background: #fbbf24; color: #1f2937; font-weight: 800; border-radius: 8px; padding: 1px 8px; font-size: .82rem; margin-top: 8px; }
+        .del { position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,.1); border: none; color: #fff; width: 26px; height: 26px; border-radius: 8px; cursor: pointer; opacity: .7; font-size: 1rem; line-height: 1; }
+        .del:hover { opacity: 1; background: #ef4444; }
+        .panel { background: var(--card); border-radius: 16px; padding: 20px; margin-top: 26px; border: 1px solid #2a2c4d; }
+        .panel h3 { margin: 0 0 14px; }
+        .frow { display: flex; flex-wrap: wrap; gap: 12px; }
+        .field { display: flex; flex-direction: column; gap: 4px; }
+        .field label { font-size: .8rem; color: var(--muted); }
+        input, select { background: #0f1020; border: 1px solid #34365e; color: var(--text); border-radius: 10px; padding: 9px 11px; font-size: .95rem; }
+        input:focus, select:focus { outline: none; border-color: #7c3aed; }
+        .btn { background: var(--grad); border: none; color: #fff; font-weight: 700; border-radius: 10px; padding: 10px 22px; cursor: pointer; margin-top: 12px; }
+        .btn:hover { filter: brightness(1.1); }
+        /* гарний селектор року */
+        .yearpick { position: relative; }
+        .yearbtn { background: #0f1020; border: 1px solid #34365e; color: var(--text); border-radius: 10px; padding: 9px 12px; font-size: .95rem; width: 118px; text-align: left; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .yearbtn:hover { border-color: #7c3aed; }
+        .yearpop { display: none; position: absolute; z-index: 30; top: calc(100% + 6px); left: 0; width: 250px; max-height: 232px; overflow-y: auto; background: #1b1c33; border: 1px solid #34365e; border-radius: 12px; padding: 8px; box-shadow: 0 14px 34px rgba(0,0,0,.55); }
+        .yearpop.open { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+        .yearpop button { background: #0f1020; border: 1px solid #2a2c4d; color: var(--text); border-radius: 8px; padding: 8px 0; cursor: pointer; font-size: .9rem; }
+        .yearpop button:hover { border-color: #7c3aed; background: #14152b; }
+        .yearpop button.sel { background: var(--grad); border-color: transparent; font-weight: 700; }
+    </style>
+</head>
+<body>
+    <header class="hero">
+        <h1>🎬 Кінотека</h1>
+        <p>Лабораторна робота 2 — виклик ASP.NET Core Web API через JavaScript (fetch) ·
+           <a href="/swagger" target="_blank">Swagger API</a></p>
+    </header>
+    <div class="wrap">
+        <h2>Фільми</h2>
+        <div class="grid" id="movies"></div>
+
+        <div class="panel">
+            <h3>➕ Додати фільм</h3>
+            <form id="addForm">
+                <div class="frow">
+                    <div class="field" style="flex:2 1 200px"><label>Назва</label><input id="title" required /></div>
+                    <div class="field"><label>Рік</label>
+                        <div class="yearpick">
+                            <button type="button" id="yearBtn" class="yearbtn"><span id="yearVal">2026</span> <span>▾</span></button>
+                            <div class="yearpop" id="yearPop"></div>
+                        </div>
+                    </div>
+                    <div class="field"><label>Рейтинг</label><input id="rating" type="number" step="0.1" min="0" max="10" value="7.0" required /></div>
+                    <div class="field" style="flex:1 1 180px"><label>Режисер</label>
+                        <input id="directorName" list="directorList" placeholder="Введіть ім'я…" required />
+                        <datalist id="directorList"></datalist>
+                    </div>
+                    <div class="field" style="flex:1 1 150px"><label>Постер</label>
+                        <input id="poster" type="file" accept="image/*" />
+                    </div>
+                </div>
+                <button class="btn" type="submit">Додати фільм</button>
+            </form>
+        </div>
+    </div>
+    <script src="app.js?v=4"></script>
+</body>
+</html>

@@ -37,6 +37,22 @@ public class MoviesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Movie>> CreateMovie(Movie movie)
     {
+        // Якщо передано ім'я режисера — знаходимо існуючого або створюємо нового.
+        if (!string.IsNullOrWhiteSpace(movie.DirectorName))
+        {
+            var name = movie.DirectorName.Trim();
+            var director = await _context.Directors.FirstOrDefaultAsync(d => d.Name == name);
+            if (director is null)
+            {
+                director = new Director { Name = name };
+                _context.Directors.Add(director);
+                await _context.SaveChangesAsync();
+            }
+            movie.DirectorId = director.Id;
+        }
+        movie.DirectorName = null;
+        movie.Director = null;
+
         _context.Movies.Add(movie);
         await _context.SaveChangesAsync();
         return CreatedAtAction(nameof(GetMovie), new { id = movie.Id }, movie);

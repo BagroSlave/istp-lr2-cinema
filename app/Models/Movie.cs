@@ -17,10 +17,18 @@ public class Movie
     // Рейтинг 0..10
     public double Rating { get; set; }
 
+    // Постер фільму (base64 data-URI або URL), необов'язковий.
+    public string? PosterUrl { get; set; }
+
     // Зовнішній ключ на режисера
     public int DirectorId { get; set; }
 
     [ForeignKey(nameof(DirectorId))]
     [JsonIgnore]
     public Director? Director { get; set; }
+
+    // Ім'я режисера для вводу з фронтенду (не зберігається в БД).
+    // Якщо задане — режисер знаходиться за іменем або створюється.
+    [NotMapped]
+    public string? DirectorName { get; set; }
 }
